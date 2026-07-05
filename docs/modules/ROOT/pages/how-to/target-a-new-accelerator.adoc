@@ -1,0 +1,38 @@
+= How to target a new accelerator
+:description: Write a vendor plugin for a new hardware target, mirroring synaptics-torq.
+
+To support a new NPU/accelerator, contribute a `TargetOptimizer` for its target
+string. Nothing in SKaiNET core changes.
+
+== 1. Implement the passes
+
+Write your DAG passes as `GraphOptimizationPass` implementations (graph rewrites
+that produce standard, still-portable ops).
+
+== 2. Register them for your target
+
+[source,kotlin]
+----
+import sk.ainet.compile.opt.TargetOptimizers
+
+object MyNpuPlugin {
+    const val TARGET = "my-npu"
+    fun install() = TargetOptimizers.registerDagPasses(TARGET) {
+        listOf(MyTilingPass(), MyLayoutPass())
+    }
+    val compileFlags = listOf("--my-npu-hw=v1", /* ... */)
+}
+----
+
+== 3. Use it exactly like the Torq plugin
+
+[source,kotlin]
+----
+MyNpuPlugin.install()
+val tiled = dagPipelineFor(MyNpuPlugin.TARGET).optimize(graph).graph
+val mlir  = toStableHlo(tiled, "model").content
+----
+
+The model and the core stay agnostic — they only ever see the target string. See
+xref:../explanation/target-legalization.adoc[why the seam exists] for the design
+rationale, and xref:../reference/synaptics-torq.adoc[synaptics-torq] as a worked example.

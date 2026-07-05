@@ -4,3 +4,7 @@ build/
 .idea/
 *.iml
 local.properties
+
+## antora
+docs/build/
+docs/.cache/

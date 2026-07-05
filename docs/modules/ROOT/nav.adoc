@@ -1,0 +1,14 @@
+* xref:index.adoc[Overview]
+
+.Tutorials
+* xref:tutorials/install-torq-plugin.adoc[Install the Torq plugin]
+
+.How-to guides
+* xref:how-to/compile-for-torq.adoc[Compile a model for the Torq NPU]
+* xref:how-to/target-a-new-accelerator.adoc[Target a new accelerator]
+
+.Reference
+* xref:reference/synaptics-torq.adoc[synaptics-torq plugin]
+
+.Explanation
+* xref:explanation/target-legalization.adoc[Why vendor plugins live outside core]

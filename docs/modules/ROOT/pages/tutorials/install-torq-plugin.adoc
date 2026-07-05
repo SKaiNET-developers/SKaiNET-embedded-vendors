@@ -1,0 +1,39 @@
+= Tutorial: install the Torq plugin
+:description: Add the synaptics-torq plugin to a project and register the Torq target.
+
+By the end of this tutorial you will have the `synaptics-torq` plugin on your
+classpath and the `"torq"` target registered, ready to optimize a model graph.
+
+== 1. Add the dependency
+
+[source,kotlin]
+----
+dependencies {
+    implementation("sk.ainet.vendors:synaptics-torq:0.1.0")
+}
+----
+
+== 2. Install the plugin at your composition root
+
+Call `install()` once, where your application chooses its target:
+
+[source,kotlin]
+----
+import sk.ainet.vendors.torq.TorqPlugin
+
+TorqPlugin.install()   // registers the "torq" DAG passes with SKaiNET core
+----
+
+== 3. Confirm the target is registered
+
+[source,kotlin]
+----
+import sk.ainet.compile.opt.dagPipelineFor
+
+val pipeline = dagPipelineFor(TorqPlugin.TARGET)   // "torq"
+println(pipeline)   // includes the Torq attention/FFN tiling passes
+----
+
+That's it — the core now knows how to optimize a graph for `"torq"` without any
+Synaptics-specific code in your model. Continue with
+xref:../how-to/compile-for-torq.adoc[compiling a model for the Torq NPU].

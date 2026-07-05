@@ -1,0 +1,42 @@
+= Why vendor plugins live outside core
+:description: The design rationale for the TargetOptimizer seam that keeps hardware knowledge out of the agnostic compiler.
+
+SKaiNET's compiler core is hardware-agnostic on purpose. A model authored in the NN
+DSL emits *portable* StableHLO — IR that names no backend. Yet different accelerators
+need different graph shapes: an NPU may need attention tiled to fit on-chip memory,
+a particular layout for matmuls, or specific compile flags. Where does that knowledge
+go without contaminating the shared IR emitter or the model definition?
+
+== The seam
+
+A `TargetOptimizer` is the plug point. A backend registers its passes with the
+`TargetOptimizers` registry from *outside* core:
+
+[source,kotlin]
+----
+TargetOptimizers.registerDagPasses("torq") { listOf(TorqAttentionTilingPass()) }
+----
+
+The core pipeline merely asks the registry which passes to run for the selected
+target at each phase (`dagPipelineFor(target)`). Nothing target-specific ever lands
+in core or in a model — the target is just a string (which is the IREE device name
+anyway).
+
+== The dependency layering
+
+[source]
+----
+app (e.g. sl2610-function-calling)
+ ├── model  → transitive: skainet core          [HW-agnostic]
+ └── synaptics-torq plugin → skainet-compile-opt [the TargetOptimizer API only]
+       app calls TorqPlugin.install() once
+----
+
+== Why this matters
+
+* *Portability.* The same exported StableHLO compiles for CPU or NPU; the difference
+  is which registered passes ran, not a fork of the model.
+* *Isolation.* Synaptics specifics (tiling constants, `torq-compile` flags) live only
+  in this repo. Core has no `if (target == "torq")` anywhere.
+* *Extensibility.* A new accelerator is a new plugin, not a core change — see
+  xref:../how-to/target-a-new-accelerator.adoc[targeting a new accelerator].

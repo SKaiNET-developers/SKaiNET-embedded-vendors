@@ -1,0 +1,31 @@
+site:
+  title: SKaiNET Embedded Vendors
+  start_page: skainet-embedded-vendors::index.adoc
+
+# Keep Antora's content cache inside the project tree so the container can run
+# as a non-root user (docker run --user $(id -u):$(id -g)). Gitignored below.
+runtime:
+  cache_dir: ./.cache/antora
+
+content:
+  sources:
+    - url: /antora
+      start_path: docs
+      branches: HEAD
+
+asciidoc:
+  attributes:
+    stem: latexmath
+  extensions:
+    # Offline Mermaid rendering baked into the Docker image (no Kroki/CDN).
+    - /opt/antora/local-mermaid-extension.js
+
+ui:
+  bundle:
+    # Shared SKaiNET-branded UI bundle, pinned for reproducible builds.
+    url: https://github.com/SKaiNET-developers/skainet-docs-ui/releases/download/v1.1.1/ui-bundle.zip
+    snapshot: true
+  supplemental_files: ./supplemental-ui
+
+output:
+  dir: ./build/site

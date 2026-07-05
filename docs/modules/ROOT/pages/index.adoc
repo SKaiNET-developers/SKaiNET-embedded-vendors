@@ -1,0 +1,38 @@
+= SKaiNET Embedded Vendors
+:description: Vendor-specific SKaiNET compiler plugins — hardware target optimizers that live outside the agnostic core.
+
+Vendor-specific SKaiNET plugins that live *outside* the hardware-agnostic SKaiNET
+core and the model definitions. Each plugin registers a hardware target's
+optimizations with the SKaiNET `TargetOptimizers` registry; an application selects
+a target and installs the matching plugin at its composition root.
+
+The core never names a backend — it only sees a target string and asks the registry
+which passes to run. That is what keeps every vendor specific out of core and out of
+your model, so the exported StableHLO stays portable.
+
+This site follows the https://diataxis.fr/[Diátaxis] framework:
+
+[.card-grid]
+* xref:tutorials/install-torq-plugin.adoc[*Tutorials*] — learning-oriented, start here.
+* xref:how-to/compile-for-torq.adoc[*How-to guides*] — task-oriented recipes.
+* xref:reference/synaptics-torq.adoc[*Reference*] — the plugin API, flags, coordinates.
+* xref:explanation/target-legalization.adoc[*Explanation*] — why the seam exists.
+
+== Available plugins
+
+[cols="1,3"]
+|===
+| `synaptics-torq` | Synaptics Torq NPU (SL2610) — attention/FFN tiling passes and the
+`torq-compile` flags, for the `"torq"` target. See xref:reference/synaptics-torq.adoc[reference].
+|===
+
+== Coordinates
+
+Published to Maven Central under `sk.ainet.vendors`:
+
+[source,kotlin]
+----
+dependencies {
+    implementation("sk.ainet.vendors:synaptics-torq:0.1.0")
+}
+----

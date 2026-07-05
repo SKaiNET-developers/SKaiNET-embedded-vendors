@@ -1,0 +1,40 @@
+= How to compile a model for the Torq NPU
+:description: Run a traced graph through the Torq DAG passes and emit StableHLO for torq-compile.
+
+You have a traced `ComputeGraph` and want a `torq-compile`-ready StableHLO module.
+
+[source,kotlin]
+----
+import sk.ainet.vendors.torq.TorqPlugin
+import sk.ainet.compile.opt.dagPipelineFor
+import sk.ainet.compile.hlo.toStableHlo
+
+TorqPlugin.install()
+
+// 1. Run the target's DAG passes (attention head/query tiling, FFN hidden tiling)
+val tiled = dagPipelineFor(TorqPlugin.TARGET).optimize(graph).graph
+
+// 2. Emit portable StableHLO — no target-specific ops in the IR
+val mlir = toStableHlo(tiled, "encoder").content
+----
+
+Then invoke `torq-compile` with the plugin's flag set:
+
+[source,bash]
+----
+torq-compile encoder.mlir -o encoder.vmfb \
+  --torq-hw=SL2610 \
+  --torq-target-host-triple=native \
+  --torq-css-qemu \
+  --torq-disable-slices          # required — avoids a buffer-aliasing blow-up
+----
+
+The exact list is available programmatically as `TorqPlugin.compileFlags`.
+
+[NOTE]
+====
+On the SL2610 v2.0.0 compiler, the attention/FFN tiling is *not* required for the
+Moonshine encoder (the newer compiler no longer hits the `MatMulPattern.cpp:57`
+assertion the tiling worked around). The passes remain for other models / older
+toolchains. `--torq-disable-slices` is always required.
+====

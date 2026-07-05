@@ -1,0 +1,11 @@
+name: skainet-embedded-vendors
+title: SKaiNET Embedded Vendors
+version: ~
+nav:
+  - modules/ROOT/nav.adoc
+
+# Component-level attributes flow to every page.
+asciidoc:
+  attributes:
+    framework_name: SKaiNET
+    skainet_core_version: 0.34.0

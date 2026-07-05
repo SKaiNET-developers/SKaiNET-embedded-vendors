@@ -1,0 +1,48 @@
+= Reference: synaptics-torq
+:description: The Synaptics Torq NPU (SL2610) target optimizer — API, passes, flags, coordinates.
+
+Vendor optimization handler for the `"torq"` target (Synaptics Torq NPU, SL2610).
+
+== Coordinates
+
+[cols="1,3"]
+|===
+| Group      | `sk.ainet.vendors`
+| Artifact   | `synaptics-torq`
+| Version    | `0.1.0`
+| Depends on | `sk.ainet.core:skainet-compile-opt`, `skainet-compile-dag`, `skainet-lang-core` (0.34.0)
+|===
+
+== `TorqPlugin`
+
+[cols="1,3"]
+|===
+| `TARGET` | `"torq"` — the target string used with `dagPipelineFor` / `toStableHlo`.
+| `install(maxHeadsPerTile = 4, maxQuerySeqPerTile = 83, ffnHiddenTile = 288)`
+| Registers the Torq DAG passes with `TargetOptimizers`. Call once at the composition root.
+| `compileFlags`
+| `--torq-hw=SL2610`, `--torq-target-host-triple=native`, `--torq-css-qemu`, `--torq-disable-slices`.
+|===
+
+== DAG passes
+
+[cols="1,3"]
+|===
+| `TorqAttentionTilingPass` | Tiles attention over heads / query-sequence to fit the NPU's on-chip layout.
+| `TorqFfnTilingPass`       | Tiles the FFN hidden dimension.
+| `TorqF32ReducePass`       | Optional bf16-trace workaround (present, not registered by default).
+| `TorqMatmulBf16Pass`      | Optional bf16-trace workaround (present, not registered by default).
+|===
+
+== Compile flags detail
+
+`--torq-disable-slices` is *required*: without it, slice-based NSS execution
+mis-aliases buffers in large graphs, producing NaN / 1e23 outputs.
+
+[NOTE]
+====
+The SL2610 v2.0.0 compiler compiles the Moonshine encoder *without* the
+attention/FFN tiling. The tiling once worked around a `MatMulPattern.cpp:57`
+assertion the newer compiler no longer hits; the passes are kept for other models
+and older toolchains.
+====
