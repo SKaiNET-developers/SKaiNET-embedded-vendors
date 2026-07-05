@@ -17,6 +17,11 @@ The vendor optimization handler for the `"torq"` target.
 - **Optional bf16-trace workarounds** (present, not registered by default): `TorqF32ReducePass`,
   `TorqMatmulBf16Pass`.
 
+> Note: the SL2610 v2.0.0 compiler (with `--torq-disable-slices`) compiles the Moonshine
+> encoder **without** the attention/FFN tiling — the tiling once worked around a
+> `MatMulPattern.cpp:57` assertion that the newer compiler no longer hits. The passes are kept
+> here for other models / older toolchains, but Moonshine's Torq path no longer requires them.
+
 ### Use (from the application / build tool)
 
 ```kotlin
@@ -57,9 +62,11 @@ Once SKaiNET publishes that version, drop the `includeBuild("../SKaiNET")` in
 `settings.gradle.kts` and bump the `sk.ainet.core:*` versions in
 `synaptics-torq/build.gradle.kts`.
 
-### Migration note
+### Status
 
-The four `Torq*Pass` classes and the `registerDagPasses("torq")` call currently also exist in
-`SKaiNET-transformers/llm-inference/moonshine/src/jvmTest` (the demo's MLIR-dump test). Those
-are **superseded** by this plugin. Once the app wires `TorqPlugin.install()` and the encoder
-MLIR generation moves out of the model's test, remove the copies from the moonshine test.
+The four `Torq*Pass` classes and the `registerDagPasses("torq")` call have been **removed** from
+`SKaiNET-transformers/llm-inference/moonshine` (commit `575bc97` there) — that test now emits
+portable, HW-agnostic StableHLO, and this plugin is the sole home for the Torq passes. An
+app/build tool that targets Torq calls `TorqPlugin.install()` and applies the tiling during its
+own trace→graph pipeline (the moonshine demo currently doesn't need the tiling — see the note
+above).
