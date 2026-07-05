@@ -69,35 +69,3 @@ pluggable-optimization mechanism.
 
 To develop against a local SKaiNET checkout instead, uncomment `includeBuild("../SKaiNET")` in
 `settings.gradle.kts` (Gradle substitutes the `sk.ainet.core:*` deps with the local projects).
-
-### Publish
-
-Set up the same way as the SKaiNET core: the [vanniktech maven-publish] plugin driven by
-`gradle.properties` (root POM + `mavenCentralPublishing` / `signAllPublications`) and per-module
-`POM_ARTIFACT_ID` / `POM_NAME`. Bump `VERSION_NAME` in `gradle.properties` for a release.
-
-```bash
-# proof-of-build, no signing key needed:
-./gradlew publishToMavenLocal -PsignAllPublications=false
-
-# real release (needs Sonatype creds + GPG signing key in the environment):
-./gradlew publishToMavenCentral            # staged; release manually on Sonatype
-./gradlew publishAndReleaseToMavenCentral  # staged + auto-released
-```
-
-Credentials/signing are supplied at CI time via the standard vanniktech env/properties
-(`mavenCentralUsername`, `mavenCentralPassword`, `signingInMemoryKey`, `signingInMemoryKeyPassword`);
-they are never committed. `signAllPublications=true` means a local publish without a configured
-GPG signatory fails on the `sign*` task by design — pass `-PsignAllPublications=false` to test the
-artifact assembly.
-
-[vanniktech maven-publish]: https://vanniktech.github.io/gradle-maven-publish-plugin/
-
-### Status
-
-The four `Torq*Pass` classes and the `registerDagPasses("torq")` call have been **removed** from
-`SKaiNET-transformers/llm-inference/moonshine` (commit `575bc97` there) — that test now emits
-portable, HW-agnostic StableHLO, and this plugin is the sole home for the Torq passes. An
-app/build tool that targets Torq calls `TorqPlugin.install()` and applies the tiling during its
-own trace→graph pipeline (the moonshine demo currently doesn't need the tiling — see the note
-above).
