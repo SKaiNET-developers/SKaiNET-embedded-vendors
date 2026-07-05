@@ -47,17 +47,51 @@ app (e.g. SKaiNET-embedded/sl2610-function-calling)
        app calls TorqPlugin.install() once
 ```
 
+### Consume
+
+Published to Maven Central under `sk.ainet.vendors`:
+
+```kotlin
+dependencies {
+    implementation("sk.ainet.vendors:synaptics-torq:0.1.0")
+}
+```
+
 ### Build
 
-Self-contained — depends on the published `sk.ainet.core:*:0.34.0` artifacts (Maven Central),
-which include the `TargetOptimizer` / pluggable-optimization mechanism.
+Self-contained — depends on the published `sk.ainet.core:*` artifacts (Maven Central, version
+pinned in `gradle/libs.versions.toml`), which include the `TargetOptimizer` /
+pluggable-optimization mechanism.
 
 ```bash
 ./gradlew :synaptics-torq:compileKotlinJvm
 ```
 
-To develop against a local SKaiNET checkout instead, add `includeBuild("../SKaiNET")` to
+To develop against a local SKaiNET checkout instead, uncomment `includeBuild("../SKaiNET")` in
 `settings.gradle.kts` (Gradle substitutes the `sk.ainet.core:*` deps with the local projects).
+
+### Publish
+
+Set up the same way as the SKaiNET core: the [vanniktech maven-publish] plugin driven by
+`gradle.properties` (root POM + `mavenCentralPublishing` / `signAllPublications`) and per-module
+`POM_ARTIFACT_ID` / `POM_NAME`. Bump `VERSION_NAME` in `gradle.properties` for a release.
+
+```bash
+# proof-of-build, no signing key needed:
+./gradlew publishToMavenLocal -PsignAllPublications=false
+
+# real release (needs Sonatype creds + GPG signing key in the environment):
+./gradlew publishToMavenCentral            # staged; release manually on Sonatype
+./gradlew publishAndReleaseToMavenCentral  # staged + auto-released
+```
+
+Credentials/signing are supplied at CI time via the standard vanniktech env/properties
+(`mavenCentralUsername`, `mavenCentralPassword`, `signingInMemoryKey`, `signingInMemoryKeyPassword`);
+they are never committed. `signAllPublications=true` means a local publish without a configured
+GPG signatory fails on the `sign*` task by design — pass `-PsignAllPublications=false` to test the
+artifact assembly.
+
+[vanniktech maven-publish]: https://vanniktech.github.io/gradle-maven-publish-plugin/
 
 ### Status
 

@@ -1,26 +1,26 @@
 plugins {
-    kotlin("multiplatform") version "2.3.21"
+    alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.vanniktech.mavenPublish)
 }
 
-group = "sk.ainet.vendors"
-version = "0.1.0"
-
-repositories {
-    mavenCentral()
-    google()
-}
+// group / version are inherited from the root project (gradle.properties: GROUP / VERSION_NAME).
 
 kotlin {
     jvm()
+
     sourceSets {
         val jvmMain by getting {
             dependencies {
-                // Substituted by the local SKaiNET projects via the composite build
-                // (settings.gradle.kts). Version is a placeholder; the substitution matches
-                // on group:name and ignores it.
-                implementation("sk.ainet.core:skainet-compile-opt:0.34.0")
-                implementation("sk.ainet.core:skainet-compile-dag:0.34.0")
-                implementation("sk.ainet.core:skainet-lang-core:0.34.0")
+                // Published SKaiNET core (Maven Central) — the TargetOptimizer seam and
+                // the DAG/lang types these passes plug into. Versions from libs.versions.toml.
+                implementation(libs.skainet.compile.opt)
+                implementation(libs.skainet.compile.dag)
+                implementation(libs.skainet.lang.core)
+            }
+        }
+        val jvmTest by getting {
+            dependencies {
+                implementation(libs.kotlin.test)
             }
         }
     }

@@ -1,0 +1,21 @@
+[versions]
+kotlin = "2.3.21"
+# Published SKaiNET core these vendor plugins compile against (Maven Central).
+skainet = "0.34.0"
+vanniktech = "0.37.0"
+binaryCompatibilityValidator = "0.18.1"
+
+[libraries]
+# SKaiNET core APIs the vendor optimizers plug into — the TargetOptimizer seam
+# (skainet-compile-opt), the DAG graph/pass types (skainet-compile-dag) and the
+# tensor/op DSL (skainet-lang-core). Kept HW-agnostic; only these plugins name a target.
+skainet-compile-opt = { module = "sk.ainet.core:skainet-compile-opt", version.ref = "skainet" }
+skainet-compile-dag = { module = "sk.ainet.core:skainet-compile-dag", version.ref = "skainet" }
+skainet-lang-core = { module = "sk.ainet.core:skainet-lang-core", version.ref = "skainet" }
+
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+
+[plugins]
+kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech" }
+binary-compatibility-validator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidator" }
