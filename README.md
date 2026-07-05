@@ -49,18 +49,15 @@ app (e.g. SKaiNET-embedded/sl2610-function-calling)
 
 ### Build
 
-This module depends on the `TargetOptimizer` / pluggable-optimization mechanism that is newer
-than published SKaiNET `0.33.0`. Until a release that includes it ships, build against a local
-SKaiNET checkout via the composite build wired in `settings.gradle.kts`:
+Self-contained — depends on the published `sk.ainet.core:*:0.34.0` artifacts (Maven Central),
+which include the `TargetOptimizer` / pluggable-optimization mechanism.
 
 ```bash
-# expects ../SKaiNET to be a sibling checkout of a branch that has the pluggable mechanism
 ./gradlew :synaptics-torq:compileKotlinJvm
 ```
 
-Once SKaiNET publishes that version, drop the `includeBuild("../SKaiNET")` in
-`settings.gradle.kts` and bump the `sk.ainet.core:*` versions in
-`synaptics-torq/build.gradle.kts`.
+To develop against a local SKaiNET checkout instead, add `includeBuild("../SKaiNET")` to
+`settings.gradle.kts` (Gradle substitutes the `sk.ainet.core:*` deps with the local projects).
 
 ### Status
 
