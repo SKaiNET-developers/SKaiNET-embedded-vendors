@@ -1,4 +1,4 @@
-# skainet-embedded-vendors
+# SKaiNET-embedded-vendors
 
 Vendor-specific SKaiNET plugins that live **outside** the agnostic SKaiNET core and the model
 definitions. Each plugin registers a hardware target's optimizations with the SKaiNET
