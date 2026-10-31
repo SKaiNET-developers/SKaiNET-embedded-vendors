@@ -20,5 +20,5 @@ shared, so `skainet/iree-compiler convert-parameters` makes them.
 
 ```
 synaptics-torq/docker/build.sh                       # pins: torq.env (TORQ_VERSION, TORQ_MANYLINUX, TORQ_BASE_IMAGE)
-docker run --rm -v $PWD:/work skainet/iree-compiler-torq:2.0.0 compile-cpu model.mlir --out model.vmfb
+docker run --rm -v $PWD:/work skainet/iree-compiler-torq:2.3.0 compile-cpu model.mlir --out model.vmfb
 ```
