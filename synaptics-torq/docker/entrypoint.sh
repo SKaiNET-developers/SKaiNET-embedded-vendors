@@ -6,14 +6,15 @@ set -euo pipefail
 cmd="${1:-help}"
 [ $# -gt 0 ] && shift
 
-# --out <f> [--target <t>] [--cpu <c>] parsing shared by the compile subcommands.
+# --out <f> [--target <t>] [--cpu <c>] [--input <type>] parsing shared by the compile subcommands.
 parse() {
-  OUT=""; TARGET="${DEFAULT_TARGET:-}"; CPU=""; EXTRA=()
+  OUT=""; TARGET="${DEFAULT_TARGET:-}"; CPU=""; INPUT="stablehlo"; EXTRA=()
   while [ $# -gt 0 ]; do
     case "$1" in
       --out) OUT="$2"; shift 2 ;;
       --target) TARGET="$2"; shift 2 ;;
       --cpu) CPU="$2"; shift 2 ;;
+      --input) INPUT="$2"; shift 2 ;;
       --) shift; EXTRA+=("$@"); break ;;
       *) EXTRA+=("$1"); shift ;;
     esac
@@ -53,13 +54,15 @@ case "$cmd" in
     ;;
 
   compile-torq)
-    # compile-torq <in.mlir> [--out f.vmfb] [--target SL2610] [-- extra iree-compile args, e.g. --torq-disable-slices]
+    # compile-torq <in.mlir> [--out f.vmfb] [--target SL2610] [--input stablehlo|tosa-torq|onnx-torq|…]
+    #              [-- extra iree-compile args, e.g. --torq-disable-slices]
+    #   --input tosa-torq: Torq's TOSA pipeline, which makes each function ONE dispatch (as for the vendor's models)
     IN="${1:?Usage: compile-torq <in.mlir> [--out f.vmfb] [--target SL2610]}"; shift
     DEFAULT_TARGET=SL2610 parse "$@"
     [ -z "$OUT" ] && OUT="${IN%.mlir}_torq.vmfb"
     SHIM="$(ld_shim)"
-    echo "==> $IN → $OUT (torq $TARGET)"
-    PATH="$SHIM:$PATH" iree-compile "$IN" --iree-input-type=stablehlo \
+    echo "==> $IN → $OUT (torq $TARGET, input $INPUT)"
+    PATH="$SHIM:$PATH" iree-compile "$IN" --iree-input-type="$INPUT" \
       --iree-hal-target-device=torq --torq-hw="$TARGET" --torq-fallback-f32-to-host \
       "${EXTRA[@]}" -o "$OUT"
     rm -rf "$SHIM"
@@ -78,7 +81,7 @@ case "$cmd" in
     echo ""
     echo "Commands:"
     echo "  compile-cpu <in.mlir> [--out f.vmfb] [--target linux-arm64|host]   MLIR → CPU VMFB (A55, embedded ELF)"
-    echo "  compile-torq <in.mlir> [--out f.vmfb] [--target SL2610]           MLIR → Torq NPU VMFB"
+    echo "  compile-torq <in.mlir> [--out f.vmfb] [--target SL2610] [--input tosa-torq]   MLIR → Torq NPU VMFB"
     echo "  compile -- <raw iree-compile args>                                escape hatch"
     echo "  version | shell"
     echo ""
