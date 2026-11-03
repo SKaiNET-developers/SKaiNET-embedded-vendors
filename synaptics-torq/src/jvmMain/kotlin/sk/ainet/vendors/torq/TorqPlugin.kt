@@ -43,16 +43,23 @@ public object TorqPlugin {
         maxHeadsPerTile: Int = 4,
         maxQuerySeqPerTile: Int = 83,
         ffnHiddenTile: Int = 288,
+        modelDim: Int = 288,
     ) {
         TargetOptimizers.register(object : TargetOptimizer {
             override val target: String = TARGET
             override fun dagPasses(): List<GraphOptimizationPass> = listOf(
+                // Apply RoPE seq-major on the K path BEFORE tiling, so the tiling pass builds a
+                // reshape-sourced seq-major K^T (else the Torq layout solver trips MatMulPattern:57).
+                TorqRopeSeqMajorPass(),
                 TorqAttentionTilingPass(
                     maxHeadsPerTile = maxHeadsPerTile,
                     maxQuerySeqPerTile = maxQuerySeqPerTile,
                 ),
                 TorqFfnTilingPass(hiddenTile = ffnHiddenTile),
             )
+            // NOTE: TorqPruneOutputsPass is applied by the app AFTER tiling (the tiling pass
+            // itself leaves the dangling [1,H,S,D] Q/K/V reshapes that must be pruned), so it is
+            // not registered here. See MoonshineEncoderExport.
             // granularity() intentionally left at the default (null / decompose-all): the Torq
             // compiler rejects `stablehlo.composite`, so there is no fused-op emission to select
             // yet. Correctness for Torq is achieved by matching the vendor's op *structure* in
@@ -64,13 +71,16 @@ public object TorqPlugin {
      * Recommended `torq-compile` flags for the SL2610. Applied by the build tool when invoking
      * the vendor compiler — these are compile-time knobs, not DAG passes.
      *
-     * `--torq-disable-slices` is required: Torq's slice-based NSS execution mis-aliases buffers
-     * in large graphs (LayerNorm/attention output collapses to NaN/1e23 without it).
+     * NOTE: `--torq-disable-slices` is deliberately NOT included. It disables the linalg slicing
+     * that tiles the attention softmax to fit the CSS stack, so on the ENCODER it causes
+     * "CSS program allocations of 1328 bytes exceed maximum CSS stack size" (verified: enc6.mlir
+     * compiles WITHOUT it → 277627 bytes, FAILS with it). It was a decoder LayerNorm-NaN
+     * workaround; enable it per-compile via `TORQ_DISABLE_SLICES=1` only if a decoder-on-Torq
+     * path needs it. See the demo's `scripts/.docker/compile-entry.sh`.
      */
     public val compileFlags: List<String> = listOf(
         "--torq-hw=SL2610",
         "--torq-target-host-triple=native",
         "--torq-css-qemu",
-        "--torq-disable-slices",
     )
 }

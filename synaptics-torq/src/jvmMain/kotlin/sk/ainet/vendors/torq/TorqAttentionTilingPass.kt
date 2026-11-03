@@ -114,12 +114,33 @@ class TorqAttentionTilingPass(
             // The extra [1,0,2] hop makes this robust to RoPE (which leaves K in [H,Sk,D]) and
             // to the no-RoPE case alike; without RoPE the paired [1,0,2] transposes canonicalize
             // away to the single [1,2,0].
-            val kShdS = spec(sk, h, d)
-            val kShd = op("transpose", mapOf("permutation" to listOf(1, 0, 2)), listOf(k3s), kShdS)
-                .also { edges += Triple(kSrc, it, 0) }
+            // If TorqRopeSeqMajorPass ran, the SDPA's K producer is `permute[1,0,2](seqK)` where seqK
+            // is the RoPE'd K already in seq-major [Sk,H,D] (reshape-sourced). Consume seqK directly and
+            // build K^T with a SINGLE [1,2,0] — the reshape-sourced seq-major K^T the Torq layout solver
+            // accepts (a head-major-sourced K^T trips MatMulPattern.cpp:57). Otherwise fall back to the
+            // route-through-[Sk,H,D] double transpose.
+            fun permAxes(n: GraphNode): List<Int>? =
+                (n.operation.parameters["permutation"] ?: n.operation.parameters["axes"])
+                    .let { it as? List<*> }?.map { (it as Number).toInt() }
+            val kSeq: Pair<Pair<GraphNode, Int>, TensorSpec>? = run {
+                val p = kSrc.first
+                val op = p.operationName.lowercase()
+                if ((op == "permute" || op == "transpose") && permAxes(p) == listOf(1, 0, 2) &&
+                    p.inputs.firstOrNull()?.shape?.size == 3
+                ) producerOf[p.id to 0]?.let { it to p.inputs[0] } else null
+            }
             val kTS = spec(h, d, sk)
-            val kT = op("transpose", mapOf("permutation" to listOf(1, 2, 0)), listOf(kShdS), kTS)
-                .also { edges += Triple(kShd to 0, it, 0) }
+            val kT = if (kSeq != null) {
+                val (seqSrc, seqSpec) = kSeq // seqSpec = [Sk,H,D] seq-major RoPE'd K
+                op("transpose", mapOf("permutation" to listOf(1, 2, 0)), listOf(seqSpec), kTS)
+                    .also { edges += Triple(seqSrc, it, 0) }
+            } else {
+                val kShdS = spec(sk, h, d)
+                val kShd = op("transpose", mapOf("permutation" to listOf(1, 0, 2)), listOf(k3s), kShdS)
+                    .also { edges += Triple(kSrc, it, 0) }
+                op("transpose", mapOf("permutation" to listOf(1, 2, 0)), listOf(kShdS), kTS)
+                    .also { edges += Triple(kShd to 0, it, 0) }
+            }
 
             val groupOuts = mutableListOf<Pair<GraphNode, Int>>() // (node, headCount)
             var s = 0
