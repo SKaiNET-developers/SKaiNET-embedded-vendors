@@ -11,7 +11,7 @@ SKaiNET-IREE-tools images on purpose (see that repo's `docs/VENDOR_LAYERS.md`).
 | Command | Does |
 |---|---|
 | `compile-cpu <in.mlir> --out f.vmfb [--target linux-arm64\|host] [--cpu c]` | llvm-cpu, embedded ELF; `linux-arm64` = Cortex-A55, v8.2a + dotprod |
-| `compile-torq <in.mlir> --out f.vmfb [--target SL2610] [--input stablehlo\|tosa-torq\|…] [-- extra]` | Torq NPU (`--torq-fallback-f32-to-host`); `--input tosa-torq` takes Torq's TOSA pipeline, which makes each function one dispatch |
+| `compile-torq <in.mlir> --out f.vmfb [--target SL2610] [--input stablehlo\|tosa-torq\|…] [-- extra]` | Torq NPU through the wheel's `torq-compile` driver (`--torq-fallback-f32-to-host`); `--input tosa-torq` takes Torq's TOSA pipeline, which makes each function one dispatch |
 | `compile -- <iree-compile args>` | escape hatch |
 | `version`, `shell` | |
 

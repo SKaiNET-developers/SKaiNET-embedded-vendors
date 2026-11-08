@@ -55,14 +55,17 @@ case "$cmd" in
 
   compile-torq)
     # compile-torq <in.mlir> [--out f.vmfb] [--target SL2610] [--input stablehlo|tosa-torq|onnx-torq|…]
-    #              [-- extra iree-compile args, e.g. --torq-disable-slices]
+    #              [-- extra torq-compile args, e.g. --torq-disable-slices]
     #   --input tosa-torq: Torq's TOSA pipeline, which makes each function ONE dispatch (as for the vendor's models)
     IN="${1:?Usage: compile-torq <in.mlir> [--out f.vmfb] [--target SL2610]}"; shift
     DEFAULT_TARGET=SL2610 parse "$@"
     [ -z "$OUT" ] && OUT="${IN%.mlir}_torq.vmfb"
     SHIM="$(ld_shim)"
     echo "==> $IN → $OUT (torq $TARGET, input $INPUT)"
-    PATH="$SHIM:$PATH" iree-compile "$IN" --iree-input-type="$INPUT" \
+    # torq-compile, not iree-compile: the wheel's Torq driver. Same libIREECompiler, but plain iree-compile
+    # asserts in affine composition on some stablehlo-torq graphs (a 16-layer decode step with
+    # block-quant matmuls) that torq-compile compiles.
+    PATH="$SHIM:$PATH" torq-compile "$IN" --iree-input-type="$INPUT" \
       --iree-hal-target-device=torq --torq-hw="$TARGET" --torq-fallback-f32-to-host \
       "${EXTRA[@]}" -o "$OUT"
     rm -rf "$SHIM"
